@@ -27,6 +27,8 @@ import $ from 'jquery';
 import 'popper.js';
 import 'bootstrap';
 
+
+
 import utils from "./utils.js";
 import camera from "./camera.js";
 import LivePreview from "./live-preview.js";
@@ -42,9 +44,21 @@ import slideshow from "./slideshow.js";
 
 import webApp from './webapp_server.js';
 
+
 const {getCurrentWindow, globalShortcut} = require('electron').remote;
 
 let livePreview;
+
+import NeopixelCountdown from './neopixel-countdown.js';
+let neopixelCountdown;
+/*
+Neopixel countdown?
+*/
+if (utils.getConfig().init.useNeopixelCountdown !== undefined ? utils.getConfig().init.useNeopixelCountdown : true) {
+  console.log('Neopixel countdown activated');
+  neopixelCountdown = new NeopixelCountdown();
+}
+
 
 camera.initialize(function( res, msg, err) {
   if (!res) {
@@ -118,6 +132,10 @@ function trigger(callback) {
   executing = true;
 
   slideshow.stop();
+  if(neopixelCountdown) {
+    console.log('Neopixel spinner stopping');
+    neopixelCountdown.stop();
+  }
 
   if (camera.isInitialized()) {
 
@@ -130,12 +148,20 @@ function trigger(callback) {
     } else {
       countdownLength = followingPhotosCountdownLength;
     }
+    if(neopixelCountdown) {
+      console.log('Neopixel startCountdown');
+      neopixelCountdown.startCountdown(countdownLength);
+    }
     let prompt = new CountdownPrompt(countdownLength).start( true, false, function() {
       prompt = new SpinnerPrompt();
       // wait a sec for spinner to start
       setTimeout(function() {
         prompt.start(true, false);
       }, 1500);
+      if(neopixelCountdown) {
+        console.log('Neopixel startSpinner');
+        neopixelCountdown.startSpinner();
+      }
     });
 
     // take picture after countdown
@@ -158,6 +184,11 @@ function trigger(callback) {
         const message1 = msg1;
         const message2 = msg2;
 
+        
+        if(neopixelCountdown) {
+          console.log('Neopixel spinner stopping');
+          neopixelCountdown.stop();
+        }
         prompt.stop(true, false, function() { // stop spinner if image is ready
 
             if (res === 0) {
